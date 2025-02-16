@@ -32,26 +32,58 @@ setupGoogleAuth(app);
 // Database Connection
 connectDB();
 
-// CORS Configuration
+// ─── CUSTOM HEADER MIDDLEWARE ─────────────────────────────────────────────
+// This middleware adds a header 'Access-Control-Allow-Origin: *'
+// **Caution:** Using '*' is not allowed with credentials. Adjust as needed.
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    return res.status(200).json({});
+  }
+  next();
+});
+// ───────────────────────────────────────────────────────────────────────────
+
+// CORS Configuration using the cors package
 const allowedOrigins = [
   "http://localhost:5173", // Vite frontend
-  "http://3.82.158.190:8000", 
+  "http://3.82.158.190:8000",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // Allow cookies/auth headers
+    credentials: true, // Allow cookies and auth headers
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Handle preflight OPTIONS requests for /api endpoints
+app.options("/api", (req, res) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.sendStatus(204);
+  } else {
+    // Return a forbidden status for disallowed origins
+    res.sendStatus(403);
+  }
+});
 
 // Middleware setup
 app.use(cookieParser());
