@@ -5,61 +5,67 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-// routes
+
+// Import routes
 import AuthRoutes from "./Routes/AuthRoutes.js";
 import MessageRoutes from "./Routes/MessageRoutes.js";
 import ArticleRoutes from "./Routes/ArticleRoutes.js";
 import FriendshipRoutes from "./Routes/FriendshipRoutes.js";
 import UserRoutes from "./Routes/UserRoutes.js";
-import TaskRoutes from "./Routes/TaskRoutes.js"
+import TaskRoutes from "./Routes/TaskRoutes.js";
 import MoodRoutes from "./Routes/MoodRoutes.js";
-//middlewares and utils
+
+// Import middlewares and utilities
 import { setupGoogleAuth } from "./Config/googleAuthConfig.js";
 import connectDB from "./Config/DBConfig.js";
-import { verify } from "./Utils/WebToken.js";
-// import upload from "./Middlewares/upload.js";
-import {upload} from './Config/cloudinaryConfig.js';
-import {app, server} from './socket/socket.js';
+import { upload } from "./Config/cloudinaryConfig.js";
+import { app, server } from "./socket/socket.js";
 import { assignDailyTask } from "./Controllers/TaskController.js";
 
+// Path configuration
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+dotenv.config();
 setupGoogleAuth(app);
 
-dotenv.config();
+// Database Connection
+connectDB();
 
-const PORT = process.env.PORT || 8080;
-assignDailyTask()
-server.listen(PORT, "0.0.0.0", () => {
-  try {
-    connectDB();
-    console.log(`Server is running on port ${PORT}`);
-  } catch (error) {
-    console.log(error);
-  }
-});
+// CORS Configuration
+const allowedOrigins = [
+  "http://localhost:5173", // Vite frontend
+  "http://3.82.158.190:8000", 
+];
 
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true })); 
-app.use(express.json());
-app.use(cookieParser());
 app.use(
   cors({
-    origin: "*",
-    credentials: true,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Allow cookies/auth headers
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// Middleware setup
+app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// Static file serving
 const musicDir = path.join(__dirname, "public/music");
 const imagesDir = path.join(__dirname, "public/images");
-// const articleImages = path.join(__dirname, "public/article_images");
-
-app.use("/api/auth", AuthRoutes);
-app.use("/api/message", MessageRoutes);
 app.use("/music", express.static(musicDir));
 app.use("/images", express.static(imagesDir));
-// app.use("/public/article_images", express.static(articleImages));
+
+// Routes setup
+app.use("/api/auth", AuthRoutes);
 app.use("/api/message", MessageRoutes);
 app.use("/api/articles", ArticleRoutes);
 app.use("/api/friends", FriendshipRoutes);
@@ -67,11 +73,14 @@ app.use("/api/users", UserRoutes);
 app.use("/api/tasks", TaskRoutes);
 app.use("/api/mood", MoodRoutes);
 
-// ------------------------------------------------------------------------------------------------------------------------------
+// API Endpoints
+app.get("/", (req, res) => {
+  res.send("Welcome to Mental-Health-app");
+});
 
 app.get("/songs", (req, res) => {
   fs.readdir(musicDir, (err, files) => {
-    if (err) return res.status(500).json({ error: "Error in fetching songs" });
+    if (err) return res.status(500).json({ error: "Error fetching songs" });
 
     const songs = files
       .filter((file) => file.endsWith(".mp3"))
@@ -87,14 +96,19 @@ app.get("/songs", (req, res) => {
   });
 });
 
-app.get("/", (req, res) => {
-  res.send("Welcome to Mental-Health-app");
-});
-
-// File upload route, will be used when a article is posted or updated
+// File upload route
 app.post("/api/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
   }
   res.json({ imageUrl: req.file.path });
+});
+
+// Assign daily tasks when server starts
+assignDailyTask();
+
+// Start server
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server is running on port ${PORT}`);
 });
