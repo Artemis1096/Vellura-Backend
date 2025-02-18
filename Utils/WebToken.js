@@ -7,7 +7,7 @@ export const generate = (userId, res) => {
   });
   res.cookie("jwt", token, {
     httpOnly: true,
-    sameSite: Lax,
+    sameSite: "Lax",
     secure: false,
   });
 };
