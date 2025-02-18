@@ -49,22 +49,9 @@ app.use((req, res, next) => {
 });
 // ───────────────────────────────────────────────────────────────────────────
 
-// CORS Configuration using the cors package
-const allowedOrigins = [
-  "http://localhost:5173", // Vite frontend
-  "http://3.82.158.190:8000",
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: "*",
     credentials: true, // Allow cookies and auth headers
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
