@@ -36,7 +36,6 @@ connectDB();
 // This middleware adds a header 'Access-Control-Allow-Origin: *'
 // **Caution:** Using '*' is not allowed with credentials. Adjust as needed.
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
@@ -57,20 +56,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-// Handle preflight OPTIONS requests for /api endpoints
-app.options("/api", (req, res) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.sendStatus(204);
-  } else {
-    // Return a forbidden status for disallowed origins
-    res.sendStatus(403);
-  }
-});
 
 // Middleware setup
 app.use(cookieParser());
